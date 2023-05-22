@@ -4,7 +4,7 @@ project( seth_qlite LANGUAGES "CXX" )
 
 add_executable( seth_qlite 
 src/seth_qlite.cpp
-src/main.cpp )
+src/test.cpp )
 
 find_library(SQLITE3_LIBRARY sqlite3)
 target_link_libraries(seth_qlite PRIVATE ${SQLITE3_LIBRARY})

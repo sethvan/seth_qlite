@@ -15,7 +15,7 @@ namespace
 
 };
 
-std::mutex Seth_Qlite::mut;
+std::unordered_map<std::string, std::mutex> Seth_Qlite::mutMap;
 
 Seth_Qlite::Seth_Qlite( const std::string& _db_name )
     : db_name( _db_name )
@@ -45,20 +45,22 @@ void Seth_Qlite::call_sqlite3_exec( const std::string& cmd, int ( *callback )( v
 
 void Seth_Qlite::execute( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
 {
-    if ( isWriteCmd( cmd ) )
+    if ( isPossibleWriteCmd( cmd ) )
     {
         return performWriteOperation( cmd, callback, passedIn );
     }
+    std::cout << "Command: \'" << cmd << "\' does not use a mutex\n\n";
     call_sqlite3_exec( cmd, callback, passedIn );
 }
 
 void Seth_Qlite::performWriteOperation( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
 {
-    std::lock_guard<std::mutex> lock( mut );
+    std::lock_guard<std::mutex> lock( mutMap[ db_name ] );
+    std::cout << "Command: \'" << cmd << "\' uses a mutex at address " << &( mutMap[ db_name ] ) << "\n\n";
     call_sqlite3_exec( cmd, callback, passedIn );
 }
 
-bool Seth_Qlite::isWriteCmd( const std::string& inputStr )
+bool Seth_Qlite::isPossibleWriteCmd( const std::string& inputStr )
 {
     std::string lowered = strToLower( inputStr );
     if ( std::ranges::find_if( writeWords, [ & ]( const auto& word ) { return lowered.find( word ) != std::string::npos; } )
