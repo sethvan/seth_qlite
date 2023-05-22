@@ -6,15 +6,17 @@
 #include <sqlite3.h>
 #include <string>
 
+// Class instantiations should not be used with more than one database at a time
 class Seth_Qlite
 {
 private:
     const std::string db_name;
     sqlite3* db;
-    const std::array<std::string, 9> writeWords
+    static constexpr std::array<std::string, 9> writeWords
         = { "create", "delete", "alter", "update", "upsert", "truncate", "merge", "replace", "insert" };
     static std::mutex mut;
     bool isWriteCmd( const std::string& inputStr );
+    void call_sqlite3_exec( const std::string& cmd, int ( *callback )( void*, int, char**, char** ) = nullptr, void* passedIn = nullptr );
 
 public:
     Seth_Qlite( const std::string& _db_name );

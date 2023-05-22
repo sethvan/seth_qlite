@@ -31,12 +31,8 @@ Seth_Qlite::Seth_Qlite( const std::string& _db_name )
     }
 }
 
-void Seth_Qlite::execute( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
+void Seth_Qlite::call_sqlite3_exec( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
 {
-    if ( isWriteCmd( cmd ) )
-    {
-        return performWriteOperation( cmd, callback, passedIn );
-    }
     char* zErrMsg = nullptr;
     int rc = sqlite3_exec( db, cmd.c_str(), callback, passedIn, &zErrMsg );
     if ( rc != SQLITE_OK )
@@ -47,17 +43,19 @@ void Seth_Qlite::execute( const std::string& cmd, int ( *callback )( void*, int,
     }
 }
 
+void Seth_Qlite::execute( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
+{
+    if ( isWriteCmd( cmd ) )
+    {
+        return performWriteOperation( cmd, callback, passedIn );
+    }
+    call_sqlite3_exec( cmd, callback, passedIn );
+}
+
 void Seth_Qlite::performWriteOperation( const std::string& cmd, int ( *callback )( void*, int, char**, char** ), void* passedIn )
 {
     std::lock_guard<std::mutex> lock( mut );
-    char* zErrMsg = nullptr;
-    int rc = sqlite3_exec( db, cmd.c_str(), callback, passedIn, &zErrMsg );
-    if ( rc != SQLITE_OK )
-    {
-        std::string errMsg = std::string( "SQL error: " ) + zErrMsg;
-        sqlite3_free( zErrMsg );
-        throw std::runtime_error( errMsg );
-    }
+    call_sqlite3_exec( cmd, callback, passedIn );
 }
 
 bool Seth_Qlite::isWriteCmd( const std::string& inputStr )
